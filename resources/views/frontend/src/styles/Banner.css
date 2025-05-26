@@ -48,7 +48,7 @@
 }
 
 .banner-section .custom-input-group {
-  max-width: 350px;
+  max-width: 420px;
   border: 1px solid #ced4da;
   border-radius: 50px;
   overflow: hidden;
@@ -82,7 +82,7 @@
   border-color: #28a745 !important;
   border: none;
   border-radius: 50px !important;
-  padding: 10px 55px;
+  padding: 10px 20px;
   color: #fff;
 }
 

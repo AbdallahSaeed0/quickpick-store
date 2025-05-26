@@ -100,29 +100,52 @@ function Checkout() {
   const t = translations[language];
 
   // Load saved addresses and cards on mount
-  useEffect(() => {
-    if (user) {
-      setBillingDetails({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        email: user.email || '',
-        phone: user.phone || billingDetails.phone || '',
-      });
-      if (user.addresses) {
-        setAddresses(user.addresses);
-        const defaultAddress = user.addresses.find((addr) => addr.isDefault);
-        if (defaultAddress) {
-          setSelectedAddress(defaultAddress);
-          setUseDefaultAddress(true);
+  // Load saved addresses and cards on mount
+useEffect(() => {
+  if (user) {
+    setBillingDetails({
+      firstName: user.first_name || '',
+      lastName: user.last_name || '',
+      email: user.email || '',
+      phone: user.phone || billingDetails.phone || '',
+    });
+
+    // Parse addresses if it's a JSON string, or handle as array
+    let userAddresses = [];
+    if (user.addresses) {
+      if (typeof user.addresses === 'string') {
+        try {
+          const parsedAddresses = JSON.parse(user.addresses);
+          userAddresses = Array.isArray(parsedAddresses) ? parsedAddresses : [];
+        } catch (e) {
+          console.error('Error parsing user.addresses:', e);
+          userAddresses = [];
         }
+      } else if (Array.isArray(user.addresses)) {
+        userAddresses = user.addresses;
       } else {
-        setAddresses([]);
+        console.warn('user.addresses is neither a string nor an array:', user.addresses);
+        userAddresses = [];
       }
     }
 
-    const savedCards = JSON.parse(localStorage.getItem('cards')) || [];
-    setCards(savedCards);
-  }, [user]);
+    setAddresses(userAddresses);
+
+    // Find default address only if userAddresses is not empty
+    if (userAddresses.length > 0) {
+      const defaultAddress = userAddresses.find((addr) => addr.isDefault);
+      if (defaultAddress) {
+        setSelectedAddress(defaultAddress);
+        setUseDefaultAddress(true);
+      }
+    } else {
+      setAddresses([]);
+    }
+  }
+
+  const savedCards = JSON.parse(localStorage.getItem('cards')) || [];
+  setCards(savedCards);
+}, [user, billingDetails.phone]);
 
   // Handlers for form inputs
   const handleBillingChange = (e) => {
@@ -387,8 +410,15 @@ function Checkout() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to place order');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to place order');
+        } else {
+          const text = await response.text();
+          console.error('Non-JSON response:', text);
+          throw new Error('Server returned an unexpected response');
+        }
       }
 
       const order = await response.json();

@@ -113,6 +113,39 @@ html[dir="rtl"] .product-title {
   text-decoration: none;
 }
 
+.popular-products .slick-slide {
+  padding: 0 10px; /* Space between slides */
+}
+
+.popular-products .slick-dots {
+  margin-top: 20px;
+}
+
+.popular-products .slick-dots li button:before {
+  font-size: 12px;
+  color: #007bff; /* Customize dot color */
+}
+
+.popular-products .slick-prev,
+.popular-products .slick-next {
+  width: 30px;
+  height: 30px;
+  background: #007bff; /* Customize arrow background */
+  border-radius: 50%;
+}
+
+.popular-products .slick-prev:before,
+.popular-products .slick-next:before {
+  color: white; 
+  line-height: 1.6;
+  padding-inline-start: 5px;
+}
+
+.popular-products .slick-slide > div {
+  display: flex;
+  justify-content: center;
+}
+
 /* Responsiveness */
 @media (max-width: 768px) {
   .product-card {

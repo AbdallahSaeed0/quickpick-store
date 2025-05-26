@@ -28,4 +28,8 @@ class Admin extends Authenticatable
         'email_verified_at' => 'datetime',
         'is_admin' => 'boolean',
     ];
+     public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
 }

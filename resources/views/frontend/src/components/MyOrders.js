@@ -64,79 +64,89 @@ function MyOrders() {
     const t = translations[language];
 
     useEffect(() => {
-        let isMounted = true;
+    let isMounted = true;
 
-        const fetchOrders = async () => {
-          if (!user) return;
+    const fetchOrders = async () => {
+        if (!user) return;
 
-          try {
+        try {
             setLoading(true);
             setError('');
             const token = localStorage.getItem('token');
             const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/orders`, {
-              headers: {
-                'Accept': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
             });
+
             if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.message || 'Failed to fetch orders');
+                const contentType = response.headers.get('content-type');
+                let errorData = {};
+                if (contentType && contentType.includes('application/json')) {
+                    errorData = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    errorData = { message: 'Server error' };
+                }
+                throw new Error(errorData.message || 'Failed to fetch orders');
             }
+
             const data = await response.json();
             console.log('Fetched orders:', data);
             if (isMounted) {
-              const pastOrders = data
-                .filter(order => ['delivered', 'cancelled'].includes(order.status))
-                .map(order => ({
-                  id: order.id,
-                  status: order.status,
-                  total: parseFloat(order.total),
-                  date: new Date(order.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US'),
-                  shipping: parseFloat(order.shipping || 0),
-                  items: order.items.map(item => ({
-                    name: item.product.name,
-                    name_ar: item.product.name_ar,
-                    quantity: item.quantity,
-                    price: parseFloat(item.price),
-                  })),
-                }));
-              const upcomingOrders = data
-                .filter(order => ['pending', 'processing', 'shipped'].includes(order.status))
-                .map(order => ({
-                  id: order.id,
-                  status: order.status,
-                  total: parseFloat(order.total),
-                  date: new Date(order.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US'),
-                  shipping: parseFloat(order.shipping || 0),
-                  items: order.items.map(item => ({
-                    name: item.product.name,
-                    name_ar: item.product.name_ar,
-                    quantity: item.quantity,
-                    price: parseFloat(item.price),
-                  })),
-                }));
-              setOrders({ past: pastOrders, upcoming: upcomingOrders });
-              setError('');
+                const pastOrders = data
+                    .filter(order => ['delivered', 'cancelled'].includes(order.status))
+                    .map(order => ({
+                        id: order.id,
+                        status: order.status,
+                        total: parseFloat(order.total),
+                        date: new Date(order.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US'),
+                        shipping: parseFloat(order.shipping || 0),
+                        items: order.items.map(item => ({
+                            name: item.product.name,
+                            name_ar: item.product.name_ar,
+                            quantity: item.quantity,
+                            price: parseFloat(item.price),
+                        })),
+                    }));
+                const upcomingOrders = data
+                    .filter(order => ['pending', 'processing', 'shipped'].includes(order.status))
+                    .map(order => ({
+                        id: order.id,
+                        status: order.status,
+                        total: parseFloat(order.total),
+                        date: new Date(order.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US'),
+                        shipping: parseFloat(order.shipping || 0),
+                        items: order.items.map(item => ({
+                            name: item.product.name,
+                            name_ar: item.product.name_ar,
+                            quantity: item.quantity,
+                            price: parseFloat(item.price),
+                        })),
+                    }));
+                setOrders({ past: pastOrders, upcoming: upcomingOrders });
+                setError('');
             }
-          } catch (err) {
+        } catch (err) {
             console.error('Error fetching orders:', err);
             if (isMounted) {
-              setError(err.message || t.error);
+                setError(err.message || t.error);
             }
-          } finally {
+        } finally {
             if (isMounted) {
-              setLoading(false);
+                setLoading(false);
             }
-          }
-        };
+        }
+    };
 
-        fetchOrders();
+    fetchOrders();
 
-        return () => {
-          isMounted = false;
-        };
-      }, [user, language, t.error]);
+    return () => {
+        isMounted = false;
+    };
+}, [user, language, t.error]);
 
     if (!user) {
         navigate('/login');

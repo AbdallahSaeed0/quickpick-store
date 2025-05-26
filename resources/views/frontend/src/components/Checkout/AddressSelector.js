@@ -57,6 +57,7 @@ function AddressSelector({
       deliveryInstructionsPlaceholder: 'Additional details',
       close: 'Close',
       saveAddress: 'Save Address',
+      select: 'Select',
     },
     ar: {
       customerName: 'اسم العميل',
@@ -84,16 +85,42 @@ function AddressSelector({
       deliveryInstructionsPlaceholder: 'تفاصيل إضافية',
       close: 'إغلاق',
       saveAddress: 'حفظ العنوان',
+      select: 'اختر',
     },
   };
 
   const t = translations[language];
 
   // Load addresses from AuthContext user
-  useEffect(() => {
-    if (authUser && authUser.addresses) {
-      setAddresses(authUser.addresses);
-      const defaultAddress = authUser.addresses.find(address => address.isDefault);
+  // Load addresses from AuthContext user
+useEffect(() => {
+  if (authUser) {
+    // Initialize userAddresses as an empty array
+    let userAddresses = [];
+
+    // Handle authUser.addresses
+    if (authUser.addresses) {
+      if (typeof authUser.addresses === 'string') {
+        try {
+          const parsedAddresses = JSON.parse(authUser.addresses);
+          userAddresses = Array.isArray(parsedAddresses) ? parsedAddresses : [];
+        } catch (e) {
+          console.error('Error parsing authUser.addresses:', e);
+          userAddresses = [];
+        }
+      } else if (Array.isArray(authUser.addresses)) {
+        userAddresses = authUser.addresses;
+      } else {
+        console.warn('authUser.addresses is neither a string nor an array:', authUser.addresses);
+        userAddresses = [];
+      }
+    }
+
+    setAddresses(userAddresses);
+
+    // Find default address only if userAddresses is not empty
+    if (userAddresses.length > 0) {
+      const defaultAddress = userAddresses.find(address => address.isDefault);
       if (defaultAddress && !selectedAddress) {
         setSelectedAddress(defaultAddress);
         setUseDefaultAddress(true);
@@ -101,7 +128,10 @@ function AddressSelector({
     } else {
       setAddresses([]);
     }
-  }, [authUser, setAddresses, setSelectedAddress, setUseDefaultAddress, selectedAddress]);
+  } else {
+    setAddresses([]);
+  }
+}, [authUser, setAddresses, setSelectedAddress, setUseDefaultAddress, selectedAddress]);
 
   return (
     <>
@@ -186,7 +216,7 @@ function AddressSelector({
                           {address.street}, {address.aptNo ? `${t.aptNo} ${address.aptNo}, ` : ''}
                           {address.floor ? `${t.floor} ${address.floor}` : ''}
                         </p>
-                        <p>{address.description}</p>
+                        <p>{address.description || t.noAdditionalDetails}</p>
                       </div>
                       <Button variant="success" onClick={() => handleSelectAddress(address)}>
                         {t.select}

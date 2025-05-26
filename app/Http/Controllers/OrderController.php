@@ -141,15 +141,21 @@ public function getStatusHistory($id)
     }
 
     public function userOrders()
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthenticated'], 401);
-        }
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
 
+    // Check if user is an instance of App\Models\User
+    if ($user instanceof \App\Models\User) {
         $orders = $user->orders()->with('items.product')->get();
         return response()->json($orders);
     }
+
+    // Handle Admin or other user types
+    return response()->json(['message' => 'Orders are not available for this user type'], 403);
+}
 
     public function destroy($id)
     {

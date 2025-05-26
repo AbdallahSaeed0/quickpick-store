@@ -105,7 +105,7 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function me(Request $request)
+   public function me(Request $request)
 {
     $user = Auth::user();
     if (!$user) {
@@ -113,6 +113,7 @@ class UserController extends Controller
     }
     $userData = $user->toArray();
     $userData['cards'] = is_array($user->cards) ? $user->cards : (json_decode($user->cards, true) ?? []);
+    $userData['addresses'] = is_array($user->addresses) ? $user->addresses : (json_decode($user->addresses, true) ?? []); // Add this line
     return response()->json($userData);
 }
 
@@ -123,71 +124,80 @@ class UserController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        try {
-            $user = User::find($id);
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-
-            // Ensure the authenticated user can only update their own profile
-            if (Auth::id() !== $user->id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
-            }
-
-            // Decode addresses if sent as a JSON string
-            $input = $request->all();
-            if (isset($input['addresses']) && is_string($input['addresses'])) {
-                $input['addresses'] = json_decode($input['addresses'], true);
-                if (json_last_error() !== JSON_ERROR_NONE || !is_array($input['addresses'])) {
-                    return response()->json([
-                        'message' => 'Validation failed',
-                        'errors' => ['addresses' => ['The addresses field must be a valid JSON array.']],
-                    ], 422);
-                }
-            }
-
-            $validated = $request->validate([
-                'first_name' => 'sometimes|string|max:255',
-                'last_name' => 'sometimes|string|max:255',
-                'email' => 'sometimes|email|unique:users,email,' . $id,
-                'phone' => 'nullable|string|max:20',
-                'gender' => 'nullable|in:male,female,other',
-                'wallet' => 'nullable|numeric|min:0',
-                'image' => 'nullable|image|max:2048',
-                'addresses' => 'sometimes|array',
-                'addresses.*.id' => 'nullable|integer',
-                'addresses.*.label' => 'required|string',
-                'addresses.*.type' => 'required|string',
-                'addresses.*.aptNo' => 'nullable|string',
-                'addresses.*.floor' => 'nullable|string',
-                'addresses.*.street' => 'required|string',
-                'addresses.*.description' => 'nullable|string',
-                'addresses.*.isDefault' => 'boolean',
-            ]);
-
-            if ($request->hasFile('image')) {
-                // Delete old image if exists
-                if ($user->image) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
-                }
-                $validated['image'] = $request->file('image')->store('users', 'public');
-            }
-
-            // Update only provided fields
-            $user->update(array_filter($validated, fn($value) => !is_null($value) && $value !== ''));
-
-            return response()->json($user);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error('Error updating user: ' . $e->getMessage());
-            return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
+{
+    try {
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
         }
+
+        // Ensure the authenticated user can only update their own profile
+        if (Auth::id() !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Decode addresses if sent as a JSON string
+        $input = $request->all();
+        if (isset($input['addresses']) && is_string($input['addresses'])) {
+            $input['addresses'] = json_decode($input['addresses'], true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($input['addresses'])) {
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => ['addresses' => ['The addresses field must be a valid JSON array.']],
+                ], 422);
+            }
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'sometimes|string|max:255',
+            'last_name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:male,female,other',
+            'wallet' => 'nullable|numeric|min:0',
+            'image' => 'nullable|image|max:2048',
+            'addresses' => 'sometimes|array',
+            'addresses.*.id' => 'nullable|integer',
+            'addresses.*.label' => 'required|string',
+            'addresses.*.type' => 'required|string',
+            'addresses.*.aptNo' => 'nullable|string',
+            'addresses.*.floor' => 'nullable|string',
+            'addresses.*.street' => 'required|string',
+            'addresses.*.description' => 'nullable|string',
+            'addresses.*.isDefault' => 'boolean',
+        ]);
+
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($user->image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
+            }
+            $validated['image'] = $request->file('image')->store('users', 'public');
+        }
+
+        // Encode addresses as JSON string before saving
+        if (isset($validated['addresses'])) {
+            $validated['addresses'] = json_encode($validated['addresses']);
+        }
+
+        // Update only provided fields
+        $user->update(array_filter($validated, fn($value) => !is_null($value) && $value !== ''));
+
+        // Return user with decoded addresses for consistency
+        $userData = $user->toArray();
+        $userData['addresses'] = is_array($user->addresses) ? $user->addresses : (json_decode($user->addresses, true) ?? []);
+
+        return response()->json($userData);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        \Log::error('Error updating user: ' . $e->getMessage());
+        return response()->json(['message' => 'Server error', 'error' => $e->getMessage()], 500);
     }
+}
 
     public function updateCards(Request $request)
     {
