@@ -15,6 +15,51 @@ class UserController extends Controller
         return response()->json($users);
     }
 
+    public function store(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
+            'gender' => 'nullable|in:male,female,other',
+            'address' => 'nullable|string|max:255',
+            'password' => 'required|string|min:6',
+            'is_admin' => 'boolean',
+            'wallet' => 'nullable|numeric|min:0',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
+        // Hash the password
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['wallet'] = $validated['wallet'] ?? 0.00;
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('users', 'public');
+        }
+
+        // Create the user
+        $user = User::create($validated);
+
+        return response()->json([
+            'user' => $user->only(['id', 'first_name', 'last_name', 'email', 'phone', 'gender', 'address', 'is_admin', 'wallet', 'image', 'created_at']),
+            'message' => 'User created successfully',
+        ], 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        \Log::error('Error creating user: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Server error',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
     public function login(Request $request)
     {
         $request->validate([
