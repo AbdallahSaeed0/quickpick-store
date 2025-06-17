@@ -98,21 +98,33 @@ function TrackOrder() {
   const handleSearch = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Please log in to track your order');
+        return;
+      }
+
+      console.log('Searching for order:', orderId); // Debug log
+
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/orders`, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
       });
+
       if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+        const errorData = await response.json();
+        console.error('Failed to fetch orders:', errorData); // Debug log
+        throw new Error(errorData.message || 'Failed to fetch orders');
       }
+
       const orders = await response.json();
-      const foundOrder = orders.find((o) => o.id.toString() === orderId);
+      console.log('All orders:', orders); // Debug log
+
+      const foundOrder = orders.find((o) => o.id.toString() === orderId.toString());
+      console.log('Found order:', foundOrder); // Debug log
 
       if (foundOrder) {
-        console.log('Found order:', foundOrder);
-
         let statusData = [];
         try {
           const statusResponse = await fetch(`${process.env.REACT_APP_API_URL}/api/user/orders/${foundOrder.id}/status-history`, {
@@ -121,8 +133,10 @@ function TrackOrder() {
               'Authorization': `Bearer ${token}`,
             },
           });
+
           if (statusResponse.ok) {
             statusData = await statusResponse.json();
+            console.log('Status history:', statusData); // Debug log
           } else {
             console.warn('Failed to fetch status history, falling back to current status');
             statusData = [{ status: foundOrder.status, changed_at: foundOrder.created_at }];
@@ -181,12 +195,13 @@ function TrackOrder() {
         setStatusHistory(statusData);
         setError('');
       } else {
+        console.log('Order not found in the list'); // Debug log
         setOrder(null);
         setStatusHistory([]);
         setError(t.errorMessage);
       }
     } catch (err) {
-      console.error('Error fetching order:', err);
+      console.error('Error in handleSearch:', err); // Debug log
       setOrder(null);
       setStatusHistory([]);
       setError(t.errorMessage);

@@ -159,13 +159,14 @@
     <!-- Chart.js Script for Sales Trends -->
     <script>
         const ctx = document.getElementById('salesChart').getContext('2d');
+        const salesData = {!! json_encode($salesTrends) !!};
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
                 datasets: [{
                     label: 'Sales',
-                    data: @json($salesTrends),
+                    data: salesData,
                     borderColor: '#28a745',
                     fill: false,
                 }]

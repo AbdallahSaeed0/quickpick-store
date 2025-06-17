@@ -35,7 +35,6 @@ class Setting extends Model
      * @var array
      */
     protected $casts = [
-        'value' => 'array', // Automatically decode JSON/JSONB to array
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

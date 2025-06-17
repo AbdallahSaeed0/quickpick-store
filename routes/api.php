@@ -51,16 +51,20 @@ Route::prefix('admin')->middleware('admin')->group(function () {
         Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
         Route::put('/orders/{id}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('admin.orders.updatePaymentStatus');
         Route::delete('/orders/{id}', [OrderController::class, 'destroy'])->name('admin.orders.destroy');
+        
         // Promotions Routes
-        Route::get('/promotions', [PromotionController::class, 'index']);
-    Route::post('/promotions', [PromotionController::class, 'store']);
-    Route::get('/promotions/{id}', [PromotionController::class, 'show']);
-    Route::put('/promotions/{id}', [PromotionController::class, 'update']);
-    Route::delete('/promotions/{id}', [PromotionController::class, 'destroy']);
-    Route::get('/settings/{section}', [SettingsController::class, 'getSettings']);
-    Route::post('/settings/{section}', [SettingsController::class, 'updateSettings']);
-    Route::post('/policy_pages', [PolicyPagesController::class, 'store']);
-    Route::get('/policy_pages', [PolicyPagesController::class, 'index']);
+        Route::prefix('promotions')->group(function () {
+            Route::get('/', [PromotionController::class, 'index']);
+            Route::post('/', [PromotionController::class, 'store']);
+            Route::get('/{id}', [PromotionController::class, 'show']);
+            Route::put('/{id}', [PromotionController::class, 'update']);
+            Route::delete('/{id}', [PromotionController::class, 'destroy']);
+        });
+
+        Route::get('/settings/{section}', [SettingsController::class, 'getSettings']);
+        Route::post('/settings/{section}', [SettingsController::class, 'updateSettings']);
+        Route::post('/policy_pages', [PolicyPagesController::class, 'store']);
+        Route::get('/policy_pages', [PolicyPagesController::class, 'index']);
 
 
     });
@@ -68,16 +72,14 @@ Route::prefix('admin')->middleware('admin')->group(function () {
 
 Route::middleware('auth:sanctum')->withoutMiddleware('throttle')->group(function () {
     // Public routes
+    Route::get('/policy_pages/{type}', [PolicyPagesController::class, 'show']);
 
-Route::get('/policy_pages/{type}', [PolicyPagesController::class, 'show']);
-
-// Protected route
-
+    // Protected routes
     Route::get('/user', [UserController::class, 'show'])->name('user.show');
-
     Route::get('/user/me', [UserController::class, 'me']);
+    Route::get('/user/orders', [OrderController::class, 'userOrders']);
+    Route::get('/user/orders/{id}/status-history', [OrderController::class, 'getStatusHistory']);
     Route::post('/user/update', [UserController::class, 'update'])->name('user.update');
-    Route::put('/user/update/{id}', [UserController::class, 'update']);
     Route::post('/user/update/{id}', [UserController::class, 'update']);
     Route::post('/user/update-cards', [UserController::class, 'updateCards'])->name('user.updateCards');
     Route::post('/user/add-funds', [UserController::class, 'addFunds'])->name('user.addFunds');
@@ -88,10 +90,6 @@ Route::get('/policy_pages/{type}', [PolicyPagesController::class, 'show']);
     Route::get('/user/wallet', [UserController::class, 'getWallet'])->name('user.wallet');
     Route::post('/user/change-password', [UserController::class, 'changePassword']);
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/user/orders', [OrderController::class, 'userOrders']);
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
-    Route::get('/user/orders/{id}/status-history', [OrderController::class, 'getStatusHistory']);
     Route::post('/promotions/validate', [PromotionController::class, 'validatePromoCode']);
 });
 

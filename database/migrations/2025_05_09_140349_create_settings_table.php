@@ -12,7 +12,7 @@ class CreateSettingsTable extends Migration
             $table->id();
             $table->string('section'); // e.g., 'banner', 'promo_section'
             $table->string('key'); // e.g., 'title_en', 'image'
-            $table->json('value'); // JSON to store text or image paths
+            $table->text('value'); // Store plain text or image paths
             $table->string('language')->default('en'); // 'en' or 'ar'
             $table->timestamps();
         });

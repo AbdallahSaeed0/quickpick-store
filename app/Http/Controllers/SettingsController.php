@@ -49,7 +49,7 @@ class SettingsController extends Controller
                 'section' => $section,
                 'key' => $item['key'],
                 'language' => $item['language'],
-                'value' => json_encode($item['value']),
+                'value' => $item['value'],
             ];
 
             // If the setting exists, preserve the existing image unless a new one is provided

@@ -22,15 +22,33 @@ function AdminPromotionsPage() {
   useEffect(() => {
     const fetchPromotions = async () => {
       try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication required');
+          navigate('/admin/login');
+          return;
+        }
+
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/promotions`, {
           headers: {
             'Accept': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
+          credentials: 'include',
         });
-        if (!response.ok) {
-          throw new Error('Failed to fetch promotions');
+
+        if (response.status === 401) {
+          setError('Session expired. Please login again.');
+          navigate('/admin/login');
+          return;
         }
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch promotions');
+        }
+
         const data = await response.json();
         setPromotions(data);
       } catch (error) {
@@ -39,7 +57,7 @@ function AdminPromotionsPage() {
       }
     };
     fetchPromotions();
-  }, []);
+  }, [navigate]);
 
   // Handle create/edit modal
   const handleShowModal = (promo = null) => {
