@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
+import Select from 'react-select';
 import { LanguageContext } from '../../context/LanguageContext';
 import Sidebar from './Sidebar';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -13,41 +14,59 @@ function OffersPageSettings() {
         banner1_text_en: '',
         banner1_text_ar: '',
         banner1_image: null,
+        banner1_products: [],
         banner2_title_en: '',
         banner2_title_ar: '',
         banner2_text_en: '',
         banner2_text_ar: '',
         banner2_image: null,
+        banner2_products: [],
         banner3_title_en: '',
         banner3_title_ar: '',
         banner3_text_en: '',
         banner3_text_ar: '',
         banner3_image: null,
+        banner3_products: [],
     });
+    const [products, setProducts] = useState([]);
     const [previewImages, setPreviewImages] = useState({ banner1: null, banner2: null, banner3: null });
     const [message, setMessage] = useState(null);
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/products`);
+                if (!response.ok) throw new Error('Failed to fetch products');
+                const data = await response.json();
+                setProducts(data.map(p => ({ value: p.id, label: p.name })));
+            } catch (err) {
+                setError(language === 'ar' ? 'خطأ في تحميل المنتجات' : 'Error loading products');
+            }
+        };
+
         const fetchSettings = async () => {
             try {
                 const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/settings/offers_page`, {
                     headers: { 'Accept': 'application/json' },
                     credentials: 'include',
                 });
-                console.log('Fetch offers page settings response status:', response.status, response.statusText);
                 if (!response.ok) throw new Error('Failed to fetch settings');
                 const data = await response.json();
-                console.log('Raw offers page settings:', data);
                 const settings = {};
                 const previews = { banner1: null, banner2: null, banner3: null };
                 data.forEach(item => {
                     if (item.key.includes('image') && item.image) {
-                        const bannerKey = item.key.split('_')[1]; // e.g., banner1_image -> banner1
+                        const bannerKey = item.key.split('_')[0];
                         previews[bannerKey] = `${process.env.REACT_APP_API_URL}/storage/${item.image}`;
-                        settings[`${bannerKey}_image`] = item.image;
+                    } else if (item.key.includes('_products')) {
+                        try {
+                            settings[item.key] = JSON.parse(item.value);
+                        } catch (e) {
+                            settings[item.key] = [];
+                        }
                     } else {
-                        settings[item.key] = JSON.parse(item.value);
+                        settings[item.key] = item.value;
                     }
                 });
                 setFormData(prev => ({ ...prev, ...settings }));
@@ -56,8 +75,15 @@ function OffersPageSettings() {
                 setError(language === 'ar' ? 'خطأ في تحميل الإعدادات' : 'Error loading settings');
             }
         };
+
+        fetchProducts();
         fetchSettings();
     }, [language]);
+
+    const handleProductChange = (selectedOptions, banner) => {
+        const productIds = selectedOptions ? selectedOptions.map(option => option.value) : [];
+        setFormData(prev => ({ ...prev, [`${banner}_products`]: productIds }));
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -106,16 +132,19 @@ function OffersPageSettings() {
             { key: 'banner1_text_en', value: formData.banner1_text_en, language: 'en' },
             { key: 'banner1_text_ar', value: formData.banner1_text_ar, language: 'ar' },
             { key: 'banner1_image', value: 'image', language: 'en' },
+            { key: 'banner1_products', value: JSON.stringify(formData.banner1_products), language: 'en' },
             { key: 'banner2_title_en', value: formData.banner2_title_en, language: 'en' },
             { key: 'banner2_title_ar', value: formData.banner2_title_ar, language: 'ar' },
             { key: 'banner2_text_en', value: formData.banner2_text_en, language: 'en' },
             { key: 'banner2_text_ar', value: formData.banner2_text_ar, language: 'ar' },
             { key: 'banner2_image', value: 'image', language: 'en' },
+            { key: 'banner2_products', value: JSON.stringify(formData.banner2_products), language: 'en' },
             { key: 'banner3_title_en', value: formData.banner3_title_en, language: 'en' },
             { key: 'banner3_title_ar', value: formData.banner3_title_ar, language: 'ar' },
             { key: 'banner3_text_en', value: formData.banner3_text_en, language: 'en' },
             { key: 'banner3_text_ar', value: formData.banner3_text_ar, language: 'ar' },
             { key: 'banner3_image', value: 'image', language: 'en' },
+            { key: 'banner3_products', value: JSON.stringify(formData.banner3_products), language: 'en' },
         ];
 
         settings.forEach((setting, index) => {
@@ -241,6 +270,20 @@ function OffersPageSettings() {
                                 </Row>
                                 <Form.Group className="mb-4">
                                     <Form.Label className="banner-settings-label">
+                                        {language === 'ar' ? 'المنتجات المرتبطة' : 'Associated Products'}
+                                    </Form.Label>
+                                    <Select
+                                        isMulti
+                                        name="banner1_products"
+                                        options={products}
+                                        className="basic-multi-select"
+                                        classNamePrefix="select"
+                                        value={products.filter(p => formData.banner1_products.includes(p.value))}
+                                        onChange={(options) => handleProductChange(options, 'banner1')}
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="banner-settings-label">
                                         {language === 'ar' ? 'صورة البانر الأول' : 'Banner 1 Image'}
                                     </Form.Label>
                                     <div className="custom-file-upload">
@@ -325,6 +368,20 @@ function OffersPageSettings() {
                                 </Row>
                                 <Form.Group className="mb-4">
                                     <Form.Label className="banner-settings-label">
+                                        {language === 'ar' ? 'المنتجات المرتبطة' : 'Associated Products'}
+                                    </Form.Label>
+                                    <Select
+                                        isMulti
+                                        name="banner2_products"
+                                        options={products}
+                                        className="basic-multi-select"
+                                        classNamePrefix="select"
+                                        value={products.filter(p => formData.banner2_products.includes(p.value))}
+                                        onChange={(options) => handleProductChange(options, 'banner2')}
+                                    />
+                                </Form.Group>
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="banner-settings-label">
                                         {language === 'ar' ? 'صورة البانر الثاني' : 'Banner 2 Image'}
                                     </Form.Label>
                                     <div className="custom-file-upload">
@@ -407,6 +464,20 @@ function OffersPageSettings() {
                                         </Form.Group>
                                     </Col>
                                 </Row>
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="banner-settings-label">
+                                        {language === 'ar' ? 'المنتجات المرتبطة' : 'Associated Products'}
+                                    </Form.Label>
+                                    <Select
+                                        isMulti
+                                        name="banner3_products"
+                                        options={products}
+                                        className="basic-multi-select"
+                                        classNamePrefix="select"
+                                        value={products.filter(p => formData.banner3_products.includes(p.value))}
+                                        onChange={(options) => handleProductChange(options, 'banner3')}
+                                    />
+                                </Form.Group>
                                 <Form.Group className="mb-4">
                                     <Form.Label className="banner-settings-label">
                                         {language === 'ar' ? 'صورة البانر الثالث' : 'Banner 3 Image'}

@@ -118,23 +118,25 @@ class ProductController extends Controller
         $product->update($validated);
         return response()->json($product->load('category'));
     }
- public function show($id)
+
+    public function show($id)
     {
         $product = Product::with('category')->findOrFail($id);
         return response()->json($product);
     }
 
     public function related($id)
-{
-    $product = Product::findOrFail($id);
-    $related = Product::where('category_id', $product->category_id)
-        ->where('id', '!=', $id)
-        ->where('active', true)
-        ->with('category')
-        ->take(4)
-        ->get();
-    return response()->json($related);
-}
+    {
+        $product = Product::findOrFail($id);
+        $related = Product::where('category_id', $product->category_id)
+            ->where('id', '!=', $id)
+            ->where('active', true)
+            ->with('category')
+            ->take(4)
+            ->get();
+        return response()->json($related);
+    }
+
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
@@ -143,5 +145,20 @@ class ProductController extends Controller
         }
         $product->delete();
         return response()->json(['message' => 'Product deleted']);
+    }
+
+    public function batch(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = explode(',', $request->query('ids'));
+        
+        $sanitizedIds = array_map('intval', $ids);
+        
+        $products = Product::whereIn('id', $sanitizedIds)->where('active', true)->get();
+        
+        return response()->json($products);
     }
 }

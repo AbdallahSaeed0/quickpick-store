@@ -4,6 +4,7 @@ import { LanguageContext } from '../../context/LanguageContext';
 import Sidebar from './Sidebar'; // Adjust the import path as needed
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../styles/PromoSectionSettings.css'; // New styles file
+import Select from 'react-select';
 
 function PromoSectionSettings() {
   const { language } = useContext(LanguageContext);
@@ -13,18 +14,32 @@ function PromoSectionSettings() {
     cooking_ideas_title_en: '',
     cooking_ideas_title_ar: '',
     cooking_ideas_image: null,
+    cooking_ideas_products: [],
     fast_delivery_badge_en: '',
     fast_delivery_badge_ar: '',
     fast_delivery_title_en: '',
     fast_delivery_title_ar: '',
     fast_delivery_image: null,
+    fast_delivery_products: [],
   });
+  const [products, setProducts] = useState([]);
   const [previewImages, setPreviewImages] = useState({ cooking_ideas: null, fast_delivery: null });
   const [existingImages, setExistingImages] = useState({ cooking_ideas: null, fast_delivery: null }); // Store existing image URLs
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/api/products`);
+        if (!response.ok) throw new Error('Failed to fetch products');
+        const data = await response.json();
+        setProducts(data.map(p => ({ value: p.id, label: p.name })));
+      } catch (err) {
+        setError(language === 'ar' ? 'خطأ في تحميل المنتجات' : 'Error loading products');
+      }
+    };
+
     const fetchSettings = async () => {
       try {
         const response = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/settings/promo_section`, {
@@ -55,12 +70,15 @@ function PromoSectionSettings() {
             settings[`${imgKey}_image`] = null; // We don't store the image file in formData
             existing[imgKey] = imageUrl;
             setPreviewImages(prev => ({ ...prev, [imgKey]: imageUrl }));
-          } else {
+          } else if (item.key.includes('_products')) {
             try {
               settings[item.key] = JSON.parse(item.value);
             } catch (e) {
-              console.error(`Failed to parse value for ${item.key}:`, item.value);
+              console.error(`Failed to parse products for ${item.key}:`, item.value);
+              settings[item.key] = [];
             }
+          } else {
+            settings[item.key] = item.value;
           }
         });
         setFormData(prev => ({ ...prev, ...settings }));
@@ -69,12 +87,18 @@ function PromoSectionSettings() {
         setError(language === 'ar' ? 'خطأ في تحميل الإعدادات' : 'Error loading settings');
       }
     };
+    fetchProducts();
     fetchSettings();
   }, [language]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleProductChange = (selectedOptions, key) => {
+    const productIds = selectedOptions ? selectedOptions.map(option => option.value) : [];
+    setFormData(prev => ({ ...prev, [`${key}_products`]: productIds }));
   };
 
   const handleImageChange = (e, key) => {
@@ -123,10 +147,12 @@ function PromoSectionSettings() {
       { key: 'cooking_ideas_badge_ar', value: formData.cooking_ideas_badge_ar, language: 'ar' },
       { key: 'cooking_ideas_title_en', value: formData.cooking_ideas_title_en, language: 'en' },
       { key: 'cooking_ideas_title_ar', value: formData.cooking_ideas_title_ar, language: 'ar' },
+      { key: 'cooking_ideas_products', value: JSON.stringify(formData.cooking_ideas_products), language: 'en' },
       { key: 'fast_delivery_badge_en', value: formData.fast_delivery_badge_en, language: 'en' },
       { key: 'fast_delivery_badge_ar', value: formData.fast_delivery_badge_ar, language: 'ar' },
       { key: 'fast_delivery_title_en', value: formData.fast_delivery_title_en, language: 'en' },
       { key: 'fast_delivery_title_ar', value: formData.fast_delivery_title_ar, language: 'ar' },
+      { key: 'fast_delivery_products', value: JSON.stringify(formData.fast_delivery_products), language: 'en' },
     ];
 
     // Only include image settings if a new image is uploaded
@@ -310,6 +336,20 @@ function PromoSectionSettings() {
                     </div>
                   )}
                 </Form.Group>
+                <Form.Group className="mb-4">
+                  <Form.Label className="promo-section-settings-label">
+                    {language === 'ar' ? 'المنتجات المرتبطة' : 'Associated Products'}
+                  </Form.Label>
+                  <Select
+                    isMulti
+                    name="cooking_ideas_products"
+                    options={products}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    value={products.filter(p => formData.cooking_ideas_products.includes(p.value))}
+                    onChange={(options) => handleProductChange(options, 'cooking_ideas')}
+                  />
+                </Form.Group>
               </div>
 
               {/* Fast Delivery Section */}
@@ -410,6 +450,20 @@ function PromoSectionSettings() {
                       )}
                     </div>
                   )}
+                </Form.Group>
+                <Form.Group className="mb-4">
+                  <Form.Label className="promo-section-settings-label">
+                    {language === 'ar' ? 'المنتجات المرتبطة' : 'Associated Products'}
+                  </Form.Label>
+                  <Select
+                    isMulti
+                    name="fast_delivery_products"
+                    options={products}
+                    className="basic-multi-select"
+                    classNamePrefix="select"
+                    value={products.filter(p => formData.fast_delivery_products.includes(p.value))}
+                    onChange={(options) => handleProductChange(options, 'fast_delivery')}
+                  />
                 </Form.Group>
               </div>
 

@@ -73,14 +73,14 @@ Route::prefix('admin')->middleware('admin')->group(function () {
 Route::middleware('auth:sanctum')->withoutMiddleware('throttle')->group(function () {
     // Public routes
     Route::get('/policy_pages/{type}', [PolicyPagesController::class, 'show']);
+    Route::get('/settings/{section}', [SettingsController::class, 'getSettings']);
 
     // Protected routes
     Route::get('/user', [UserController::class, 'show'])->name('user.show');
     Route::get('/user/me', [UserController::class, 'me']);
     Route::get('/user/orders', [OrderController::class, 'userOrders']);
     Route::get('/user/orders/{id}/status-history', [OrderController::class, 'getStatusHistory']);
-    Route::post('/user/update', [UserController::class, 'update'])->name('user.update');
-    Route::post('/user/update/{id}', [UserController::class, 'update']);
+    Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user.update');
     Route::post('/user/update-cards', [UserController::class, 'updateCards'])->name('user.updateCards');
     Route::post('/user/add-funds', [UserController::class, 'addFunds'])->name('user.addFunds');
     Route::post('/user/withdraw-funds', [UserController::class, 'withdrawFunds'])->name('user.withdrawFunds');
@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->withoutMiddleware('throttle')->group(function
     Route::get('/user/wallet', [UserController::class, 'getWallet'])->name('user.wallet');
     Route::post('/user/change-password', [UserController::class, 'changePassword']);
     Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::post('/promotions/validate', [PromotionController::class, 'validatePromoCode']);
 });
 
@@ -98,9 +99,11 @@ Route::middleware('auth:sanctum')->withoutMiddleware('throttle')->group(function
 Route::get('/products/{id}/related', [ProductController::class, 'related']);
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/batch', [ProductController::class, 'batch']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/promotions/validate', [PromotionController::class, 'validatePromoCode']);
 Route::post('/register', [UserController::class, 'register']);
+Route::get('/settings/{section}', [SettingsController::class, 'getSettings']);
 
 

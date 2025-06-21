@@ -67,8 +67,8 @@ class SettingsController extends Controller
                 $updateData
             );
 
-            // Only update the image if a new one is provided
-            if (isset($item['image'])) {
+            // Only update the image if a new one is provided and the key does not end with _products
+            if (isset($item['image']) && !str_ends_with($item['key'], '_products')) {
                 // Delete the old image if it exists
                 if ($setting->image) {
                     Storage::disk('public')->delete($setting->image);
