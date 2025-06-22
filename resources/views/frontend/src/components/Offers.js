@@ -139,7 +139,7 @@ function OffersPage() {
 
   const renderProductSection = (products) => (
     <Row className="mb-5">
-      {products.length > 0 ? (
+      {products && Array.isArray(products) && products.length > 0 ? (
         products.map((product) => (
           <Col md={3} key={product.id} className="mb-4">
             <ProductCard product={product} />

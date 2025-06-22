@@ -13,13 +13,13 @@ function ProductCard({
   cartButtonContent = null,
   priceFormatter = (price, language) => {
     const numericPrice = parseFloat(price); // Convert to number
-    const currency = language === 'ar' ? 'EGP' : 'USD';
-    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
+    const currency = 'EGP'; // Always use EGP
+    const locale = language === 'ar' ? 'ar-EG' : 'en-US'; // Set locale based on language
     return new Intl.NumberFormat(locale, {
-        style: 'currency',
-        currency: currency,
+      style: 'currency',
+      currency: currency,
     }).format(numericPrice);
-},
+  },
   titleClassName = 'product-name',
   priceAndButtonLayout = 'stacked',
 }) {

@@ -39,15 +39,22 @@ function PopularProducts() {
           throw new Error('Failed to fetch products');
         }
         const data = await response.json();
-        // Map products and ensure price is a number
-        const formattedProducts = data.map(product => ({
-          ...product,
-          price: parseFloat(product.price),
-        }));
-        setProducts(formattedProducts);
+        // Ensure data is an array before mapping
+        if (Array.isArray(data)) {
+          // Map products and ensure price is a number
+          const formattedProducts = data.map(product => ({
+            ...product,
+            price: parseFloat(product.price),
+          }));
+          setProducts(formattedProducts);
+        } else {
+          console.error('Products data is not an array:', data);
+          setProducts([]);
+        }
       } catch (err) {
         console.error('Error fetching products:', err);
         setError(err.message);
+        setProducts([]);
       } finally {
         setLoading(false);
       }
