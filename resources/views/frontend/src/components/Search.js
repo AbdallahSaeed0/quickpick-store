@@ -289,19 +289,6 @@ function Search() {
     return (
         <div className="search-page">
             <Container className="py-5">
-                <Row className="mb-4">
-                    <Col className="text-end">
-                        <Dropdown onSelect={handleLanguageSelect}>
-                            <Dropdown.Toggle variant="outline-secondary" id="language-dropdown">
-                                {t.languageLabel} {language === 'en' ? 'English' : 'العربية'}
-                            </Dropdown.Toggle>
-                            <Dropdown.Menu>
-                                <Dropdown.Item eventKey="en">English</Dropdown.Item>
-                                <Dropdown.Item eventKey="ar">العربية</Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </Col>
-                </Row>
 
                 <Form onSubmit={handleSearchSubmit} className="search-form mb-4">
                     <Row className="justify-content-center">
