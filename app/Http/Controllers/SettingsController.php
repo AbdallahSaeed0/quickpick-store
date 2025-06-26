@@ -19,12 +19,21 @@ class SettingsController extends Controller
 
     public function updateSettings(Request $request, $section)
     {
-        $validator = Validator::make($request->all(), [
+        // Prepare validation rules dynamically
+        $rules = [
             '*.key' => 'required|string',
             '*.value' => 'required',
             '*.language' => 'required|in:en,ar',
-            '*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
+        ];
+
+        // Add image validation rules for any uploaded images
+        foreach ($request->all() as $key => $value) {
+            if (str_contains($key, '.image')) {
+                $rules[$key] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
+            }
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             Log::error('Validation errors for section ' . $section . ': ' . json_encode($validator->errors()));
@@ -34,7 +43,7 @@ class SettingsController extends Controller
         $data = $request->all();
         Log::info('Request data for section ' . $section . ': ' . json_encode($data));
 
-        foreach ($data as $item) {
+        foreach ($data as $index => $item) {
             Log::info('Processing item: ' . $item['key'] . ', value: ' . $item['value'] . ', language: ' . $item['language']);
 
             // Find the existing setting, if it exists
@@ -67,13 +76,20 @@ class SettingsController extends Controller
                 $updateData
             );
 
-            // Only update the image if a new one is provided and the key does not end with _products
-            if (isset($item['image']) && !str_ends_with($item['key'], '_products')) {
+            // Check if an image file was uploaded for this specific item
+            $imageFieldName = $index . '.image';
+            if ($request->hasFile($imageFieldName) && !str_ends_with($item['key'], '_products')) {
+                $imageFile = $request->file($imageFieldName);
+                Log::info('Processing image file for ' . $item['key']);
+
                 // Delete the old image if it exists
                 if ($setting->image) {
                     Storage::disk('public')->delete($setting->image);
+                    Log::info('Deleted old image: ' . $setting->image);
                 }
-                $path = $item['image']->store('settings', 'public');
+
+                // Store the new image
+                $path = $imageFile->store('settings', 'public');
                 $setting->image = $path;
                 $setting->save();
                 Log::info('Image updated for ' . $item['key'] . ': ' . $path);

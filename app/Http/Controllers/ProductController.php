@@ -9,9 +9,46 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->where('active', true)->get();
+        $query = Product::with('category')->where('active', true);
+
+        // Handle search parameter
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('name_ar', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('description', 'LIKE', '%' . $searchTerm . '%')
+                  ->orWhere('description_ar', 'LIKE', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Handle category parameter
+        if ($request->has('category') && !empty($request->category)) {
+            $categoryName = $request->category;
+            $query->whereHas('category', function($q) use ($categoryName) {
+                $q->where('name', $categoryName)
+                  ->orWhere('name_ar', $categoryName);
+            });
+        }
+
+        // Handle sort parameter
+        $sortOption = $request->get('sort', 'Best Selling');
+        switch ($sortOption) {
+            case 'Price Low to High':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'Price High to Low':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'Best Selling':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $products = $query->get();
         return response()->json($products);
     }
 
@@ -154,11 +191,11 @@ class ProductController extends Controller
         ]);
 
         $ids = explode(',', $request->query('ids'));
-        
+
         $sanitizedIds = array_map('intval', $ids);
-        
+
         $products = Product::whereIn('id', $sanitizedIds)->where('active', true)->get();
-        
+
         return response()->json($products);
     }
 }
