@@ -1,5 +1,5 @@
 
-<h1 align="center">E-commerce Platform <br/> <sub>(React & Laravel)</sub></h1>
+<h1 align="center">Quickpick Store Platform <br/> <sub>(React & Laravel)</sub></h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React" />
